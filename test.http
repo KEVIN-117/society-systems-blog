@@ -1,0 +1,11 @@
+# Register user and create author at the same time
+POST http://localhost:1337/api/users/register
+Content-Type: application/json
+
+{
+    "username": "test",
+    "email": "test",
+    "password": "test"
+}
+
+curl -X POST http://localhost:1337/api/auth/local/register -H "Content-Type: application/json" -d '{"username": "kevin","email": "kevin@example.com","password": "123456"}'

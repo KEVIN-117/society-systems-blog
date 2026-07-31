@@ -1,0 +1,21 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: society-systems-db
+    environment:
+      POSTGRES_USER: society-systems
+      POSTGRES_PASSWORD: 1234567890
+      POSTGRES_DB: society_systems
+    ports:
+      - "5432:5432"
+    volumes:
+      - society-systems-db:/var/lib/postgresql/data
+    networks:
+      - society-systems
+
+volumes:
+  society-systems-db:
+
+networks:
+  society-systems:
