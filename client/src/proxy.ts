@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   // Rutas que requieren autenticación
   const protectedRoutes = ['/dashboard', '/profile'];
   // Rutas exclusivas para usuarios NO autenticados
