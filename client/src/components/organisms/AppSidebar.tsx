@@ -116,7 +116,37 @@ const data = {
   ],
 }
 
+import { useEffect, useState } from "react"
+import { userService } from "@/actions/user"
+
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const [userProfile, setUserProfile] = useState<{name: string, email: string, avatar: string}>(data.user)
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const profile = await userService.getProfile();
+        
+        let avatarUrl = "";
+        if (profile.author?.avatar?.url) {
+          avatarUrl = profile.author.avatar.url.startsWith('http') 
+            ? profile.author.avatar.url 
+            : `${process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337'}${profile.author.avatar.url}`;
+        }
+        
+        setUserProfile({
+          name: profile.author?.name || profile.username,
+          email: profile.email,
+          avatar: avatarUrl || data.user.avatar,
+        });
+      } catch (error) {
+        console.error("Error cargando el usuario en el sidebar:", error);
+      }
+    };
+    
+    fetchUser();
+  }, []);
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -127,7 +157,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavProjects projects={data.projects} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={userProfile} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

@@ -15,7 +15,7 @@ export const authService = {
       throw error;
     }
   },
-  
+
   register: async (data: RegisterInput): Promise<AuthResponse> => {
     try {
       const response = await apiClient.post<AuthResponse>('/auth/register', data);
@@ -28,8 +28,15 @@ export const authService = {
     }
   },
 
-  logout: () => {
-    Cookies.remove('auth_token', { path: '/' });
-    window.location.href = '/login';
+  logout: async () => {
+    try {
+      const response = await apiClient.post('/auth/logout');
+      return response.data
+    } catch (error) {
+      throw error
+    } finally {
+      Cookies.remove('auth_token');
+      window.location.href = '/';
+    }
   }
 };
