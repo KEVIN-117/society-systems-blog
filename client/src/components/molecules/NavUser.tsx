@@ -1,4 +1,5 @@
 "use client"
+import Link from "next/link"
 
 import {
   Avatar,
@@ -20,7 +21,9 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { ChevronsUpDownIcon, SparklesIcon, BadgeCheckIcon, CreditCardIcon, BellIcon, LogOutIcon } from "lucide-react"
+import { ChevronsUpDownIcon, SparklesIcon, Settings2Icon, LogOutIcon } from "lucide-react"
+import { Button } from "../ui/button"
+import { authService } from "@/actions/auth"
 
 export function NavUser({
   user,
@@ -52,7 +55,7 @@ export function NavUser({
             <ChevronsUpDownIcon className="ml-auto size-4" />
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="w-fit"
+            className="w-fit flex flex-col gap-2 p-4"
             side={isMobile ? "bottom" : "right"}
             align="end"
             sideOffset={4}
@@ -80,28 +83,25 @@ export function NavUser({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuGroup>
+            <DropdownMenuGroup className="space-y-3">
               <DropdownMenuItem>
-                <BadgeCheckIcon
-                />
-                Account
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <CreditCardIcon
-                />
-                Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <BellIcon
-                />
-                Notifications
+                <Link href="/dashboard/settings" className="flex items-center cursor-pointer w-full gap-2">
+                  <Settings2Icon className="size-4" />
+                  <p>Configuración</p>
+                </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem>
-              <LogOutIcon
-              />
-              Log out
+              <Button
+                variant="destructive"
+                size="lg"
+                className="w-full"
+                onClick={authService.logout}
+              >
+                <LogOutIcon className="mr-2 h-4 w-4" />
+                Cerrar sesión
+              </Button>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

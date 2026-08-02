@@ -1,36 +1,53 @@
-// /src/extensions/users-permissions/strapi-server.js
-
 module.exports = (plugin: any) => {
-    const originalAuthFactory = plugin.controllers.auth;
+    // Conserva las referencias originales
+    const originalAuth = plugin.controllers.auth;
+    const originalUser = plugin.controllers.user;
 
-    plugin.controllers.auth = ({ strapi }: any) => {
-        // Resuelve la fábrica original
-        const originalAuth = originalAuthFactory({ strapi });
+    // Helper para resolver el controlador (puede ser factory o un objeto directo)
+    const resolveController = (controller: any, options: any) => {
+        return typeof controller === 'function' ? controller(options) : controller;
+    };
 
-        // Guarda el método original
-        const originalRegister = originalAuth.register;
+    // Extender auth.register
+    plugin.controllers.auth = (options: any) => {
+        const authController = resolveController(originalAuth, options);
+        const originalRegister = authController.register;
 
-        // Sobreescribe el método register
-        originalAuth.register = async (ctx: any) => {
-            // Ejecuta el registro normal (escribe en ctx.body)
+        authController.register = async (ctx: any) => {
+            // Ejecuta el registro original
             await originalRegister(ctx);
 
-            // Si el registro fue exitoso, crea un Author
+            // Delega la creación del perfil al servicio
             if (ctx.body && ctx.body.user) {
-                const user = ctx.body.user;
-
-                await strapi.entityService.create('api::author.author', {
-                    data: {
-                        name: user.username || user.email,
-                        email: user.email,
-                        avatar: null,
-                        user: user.id, // relación con el User
-                    },
-                });
+                await options.strapi
+                    .service('api::author.auth-profile')
+                    .createAuthorForUser(ctx.body.user);
             }
         };
 
-        return originalAuth;
+        return authController;
+    };
+
+    // Extender user.me
+    plugin.controllers.user = (options: any) => {
+        const userController = resolveController(originalUser, options);
+
+        userController.me = async (ctx: any) => {
+            const currentUser = ctx.state.user;
+
+            if (!currentUser) {
+                return ctx.unauthorized();
+            }
+
+            // Delega la obtención del perfil al servicio
+            const profile = await options.strapi
+                .service('api::author.current-user')
+                .getProfile(currentUser.id);
+
+            ctx.body = profile;
+        };
+
+        return userController;
     };
 
     return plugin;
