@@ -69,6 +69,10 @@ const data = {
           url: "/dashboard/articles",
         },
         {
+          title: "Explorar",
+          url: "/dashboard/articles/explore",
+        },
+        {
           title: "Crear Artículo",
           url: "/dashboard/articles/create",
         },

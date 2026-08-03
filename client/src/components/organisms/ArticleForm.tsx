@@ -1,248 +1,358 @@
 "use client";
 
 import * as React from "react";
+import { useForm } from "@tanstack/react-form";
 import { GlassButton } from "@/components/atoms/GlassButton";
 import { Badge } from "@/components/ui/badge";
-import { FileUp, Edit3, Eye, Image as ImageIcon, Send, X } from "lucide-react";
+import { FileUp, Edit3, Eye, Image as ImageIcon, Send, X, Save } from "lucide-react";
 import Post from "../molecules/Post";
+import { Article, Category, CreateArticleInput } from "@/model/article.schema";
+import { articleService } from "@/actions/article";
+import { useToast } from "@/hooks/use-toast";
+import { useRouter } from "next/navigation";
+import { apiClient } from "@/datasource/remote/axios";
+import { Loader } from "@/components/atoms/Loader";
 
-const CATEGORIES = [
-  { name: "Software", slug: "software" },
-  { name: "Datos", slug: "datos" },
-  { name: "Redes", slug: "redes" },
-  { name: "Arquitectura", slug: "arquitectura" },
-  { name: "Inteligencia Artificial", slug: "inteligencia-artificial" },
-  { name: "Ciberseguridad", slug: "ciberseguridad" },
-  { name: "Desarrollo Web", slug: "desarrollo-web" },
-  { name: "Desarrollo Móvil", slug: "desarrollo-movil" },
-  { name: "DevOps", slug: "devops" },
-  { name: "Cloud Computing", slug: "cloud-computing" },
-  { name: "Hardware e IoT", slug: "hardware-e-iot" },
-  { name: "Gestión de TI", slug: "gestion-de-ti" },
-  { name: "Sistemas Operativos", slug: "sistemas-operativos" },
-  { name: "Innovación", slug: "innovacion" },
-];
+interface ArticleFormProps {
+    initialData?: Article;
+}
 
-export function ArticleForm() {
-  const [tab, setTab] = React.useState<"write" | "preview">("write");
-  const [content, setContent] = React.useState("");
-  const [selectedCategories, setSelectedCategories] = React.useState<string[]>([]);
-  const [imagePreview, setImagePreview] = React.useState<string>("");
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
+export function ArticleForm({ initialData }: ArticleFormProps) {
+    const [tab, setTab] = React.useState<"write" | "preview">("write");
+    const [categories, setCategories] = React.useState<Category[]>([]);
+    const [imagePreview, setImagePreview] = React.useState<string | null>(
+        initialData?.cover?.url
+            ? (initialData.cover.url.startsWith('http') ? initialData.cover.url : `${process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337'}${initialData.cover.url}`)
+            : null
+    );
+    const [coverId, setCoverId] = React.useState<number | null>(initialData?.cover?.id || null);
+    const [isUploading, setIsUploading] = React.useState(false);
 
-  const handleCategorySelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const val = e.target.value;
-    if (val && !selectedCategories.includes(val)) {
-      setSelectedCategories([...selectedCategories, val]);
-    }
-    e.target.value = "";
-  };
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
+    const { toast } = useToast();
+    const router = useRouter();
 
-  const removeCategory = (slug: string) => {
-    setSelectedCategories(selectedCategories.filter(c => c !== slug));
-  };
+    React.useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const res = await articleService.getCategories();
+                setCategories(res.data);
+            } catch (err) {
+                console.error("Failed to fetch categories");
+            }
+        };
+        fetchCategories();
+    }, []);
 
-  const handleMdUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const form = useForm({
+        defaultValues: {
+            title: initialData?.title || "",
+            description: initialData?.description || "",
+            content: initialData?.content || "",
+            slug: initialData?.slug || "",
+            categories: initialData?.categories?.map(c => c.documentId) || [],
+            cover: initialData?.cover?.id || null,
+            publishedAt: initialData?.publishedAt || new Date().toISOString(), // Default to published
+        } as CreateArticleInput,
+        onSubmit: async ({ value }) => {
+            try {
+                const payload = {
+                    ...value,
+                    cover: coverId
+                };
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setContent(e.target?.result as string);
+                if (initialData) {
+                    await articleService.updateArticle(initialData.documentId, payload);
+                    toast({ title: "Artículo actualizado", description: "Tu artículo ha sido guardado exitosamente." });
+                } else {
+                    await articleService.createArticle(payload);
+                    toast({ title: "Artículo creado", description: "Tu artículo ha sido creado exitosamente." });
+                }
+                router.push('/dashboard/articles');
+                router.refresh();
+            } catch (err: any) {
+                toast({
+                    variant: "destructive",
+                    title: "Error al guardar",
+                    description: err.response?.data?.error?.message || "Ocurrió un error inesperado.",
+                });
+            }
+        },
+    });
+
+    const handleMdUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const result = e.target?.result as string;
+            form.setFieldValue('content', result);
+        };
+        reader.readAsText(file);
     };
-    reader.readAsText(file);
-  };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // TODO: Connect to Strapi API
-    console.log("Submit article");
-  };
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setImagePreview(e.target?.result as string);
+        // Optimistic UI preview
+        const reader = new FileReader();
+        reader.onload = (ev) => setImagePreview(ev.target?.result as string);
+        reader.readAsDataURL(file);
+
+        try {
+            setIsUploading(true);
+            const formData = new FormData();
+            formData.append('files', file);
+
+            const response = await apiClient.post('/upload', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+
+            if (response.data && response.data.length > 0) {
+                setCoverId(response.data[0].id);
+                toast({ title: "Portada subida", description: "La imagen se ha subido correctamente." });
+            }
+        } catch (err) {
+            toast({ variant: "destructive", title: "Error al subir", description: "No se pudo subir la imagen de portada." });
+            setImagePreview(null);
+        } finally {
+            setIsUploading(false);
+        }
     };
-    reader.readAsDataURL(file);
-  };
 
-  return (
-    <form onSubmit={handleSubmit} className="space-y-8 max-w-4xl mx-auto">
-      {/* Header Info */}
-      <div className="glass-panel p-6 rounded-2xl space-y-6 border-white/5">
-        <div className="space-y-4">
-          <label className="block">
-            <span className="text-sm font-medium text-gray-300">Título del Artículo</span>
-            <input
-              type="text"
-              name="title"
-              required
-              className="mt-1 w-full bg-black/40 border border-white/10 rounded-xl py-3 px-4 text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-[#72004c]/50 transition-all font-heading text-lg"
-              placeholder="Escribe un título llamativo..."
-            />
-          </label>
+    return (
+        <form
+            onSubmit={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                form.handleSubmit();
+            }}
+            className="space-y-8 max-w-4xl mx-auto"
+        >
+            <div className="glass-panel p-6 rounded-2xl space-y-6 border-white/5">
+                <div className="space-y-4">
+                    <form.Field
+                        name="title"
+                        children={(field) => (
+                            <label className="block">
+                                <span className="text-sm font-medium text-gray-300">Título del Artículo</span>
+                                <input
+                                    type="text"
+                                    name={field.name}
+                                    value={field.state.value}
+                                    onChange={(e) => field.handleChange(e.target.value)}
+                                    className="mt-1 w-full bg-black/40 border border-white/10 rounded-xl py-3 px-4 text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-[#72004c]/50 transition-all font-heading text-lg"
+                                    placeholder="Escribe un título llamativo..."
+                                />
+                                {field.state.meta.errors ? <p className="text-red-500 text-xs mt-1">{field.state.meta.errors.join(", ")}</p> : null}
+                            </label>
+                        )}
+                    />
 
-          <label className="block">
-            <div className="flex justify-between">
-              <span className="text-sm font-medium text-gray-300">Breve Descripción</span>
-              <span className="text-xs text-gray-500">Max 80 caracteres</span>
-            </div>
-            <input
-              type="text"
-              name="description"
-              maxLength={80}
-              required
-              className="mt-1 w-full bg-black/40 border border-white/10 rounded-xl py-3 px-4 text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-[#72004c]/50 transition-all"
-              placeholder="Un resumen que atraiga al lector..."
-            />
-          </label>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="block">
-            <span className="text-sm font-medium text-gray-300">Categorías (Múltiples)</span>
-            <select
-              className="mt-1 w-full bg-[#0a0a0f] border border-white/10 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-[#72004c]/50 transition-all appearance-none cursor-pointer"
-              onChange={handleCategorySelect}
-              defaultValue=""
-            >
-              <option value="" disabled>Añadir categoría...</option>
-              {CATEGORIES.filter(c => !selectedCategories.includes(c.slug)).map(cat => (
-                <option key={cat.slug} value={cat.slug}>{cat.name}</option>
-              ))}
-            </select>
-
-            {/* Badges Container */}
-            {selectedCategories.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-3">
-                {selectedCategories.map(slug => {
-                  const cat = CATEGORIES.find(c => c.slug === slug);
-                  return (
-                    <Badge
-                      key={slug}
-                      variant="secondary"
-                      className="cursor-pointer bg-[#72004c]/20 text-white hover:bg-[#72004c]/40 border border-[#72004c]/50 transition-colors py-1 px-3"
-                      onClick={() => removeCategory(slug)}
-                      title="Haz clic para remover"
-                    >
-                      {cat?.name} <X className="w-3 h-3 ml-1 inline-block" />
-                    </Badge>
-                  );
-                })}
-              </div>
-            )}
-            {/* Hidden inputs to submit array data */}
-            {selectedCategories.map(slug => (
-              <input type="hidden" name="categories[]" value={slug} key={`hidden-${slug}`} />
-            ))}
-          </div>
-
-          <label className="block">
-            <span className="text-sm font-medium text-gray-300">Imagen de Portada (Opcional)</span>
-            <div className="mt-1 flex items-center gap-3">
-              <div className="flex-1 relative cursor-pointer group">
-                <input
-                  type="file"
-                  name="cover"
-                  accept="image/*,video/*"
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                  onChange={handleImageUpload}
-                />
-                <div className="w-full bg-black/40 border border-white/10 border-dashed rounded-xl py-3 px-4 text-gray-400 group-hover:border-[#72004c]/50 group-hover:text-white transition-all flex items-center justify-center">
-                  <ImageIcon className="w-5 h-5 mr-2" />
-                  <span>Subir portada</span>
+                    <form.Field
+                        name="description"
+                        children={(field) => (
+                            <label className="block">
+                                <div className="flex justify-between">
+                                    <span className="text-sm font-medium text-gray-300">Breve Descripción</span>
+                                    <span className="text-xs text-gray-500">Max 200 caracteres</span>
+                                </div>
+                                <input
+                                    type="text"
+                                    name={field.name}
+                                    maxLength={200}
+                                    value={field.state.value}
+                                    onChange={(e) => field.handleChange(e.target.value)}
+                                    className="mt-1 w-full bg-black/40 border border-white/10 rounded-xl py-3 px-4 text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-[#72004c]/50 transition-all"
+                                    placeholder="Un resumen que atraiga al lector..."
+                                />
+                                {field.state.meta.errors ? <p className="text-red-500 text-xs mt-1">{field.state.meta.errors.join(", ")}</p> : null}
+                            </label>
+                        )}
+                    />
                 </div>
-              </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <form.Field
+                        name="categories"
+                        children={(field) => (
+                            <div className="block">
+                                <span className="text-sm font-medium text-gray-300">Categorías</span>
+                                <select
+                                    className="mt-1 w-full bg-[#0a0a0f] border border-white/10 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-[#72004c]/50 transition-all appearance-none cursor-pointer"
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        if (val && !field.state.value.includes(val)) {
+                                            field.handleChange([...field.state.value, val]);
+                                        }
+                                        e.target.value = "";
+                                    }}
+                                    defaultValue=""
+                                >
+                                    <option value="" disabled>Añadir categoría...</option>
+                                    {categories.filter(c => !field.state.value.includes(c.documentId)).map(cat => (
+                                        <option key={cat.documentId} value={cat.documentId}>{cat.name}</option>
+                                    ))}
+                                </select>
+
+                                {field.state.value.length > 0 && (
+                                    <div className="flex flex-wrap gap-2 mt-3">
+                                        {field.state.value.map(docId => {
+                                            const cat = categories.find(c => c.documentId === docId);
+                                            return (
+                                                <Badge
+                                                    key={docId}
+                                                    variant="secondary"
+                                                    className="cursor-pointer bg-[#00b4db]/10 text-white hover:bg-[#00b4db]/30 border border-[#00b4db]/50 transition-colors py-1 px-3"
+                                                    onClick={() => field.handleChange(field.state.value.filter(c => c !== docId))}
+                                                    title="Haz clic para remover"
+                                                >
+                                                    {cat?.name || 'Cargando...'} <X className="w-3 h-3 ml-1 inline-block" />
+                                                </Badge>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                                {field.state.meta.errors ? <p className="text-red-500 text-xs mt-1">{field.state.meta.errors.join(", ")}</p> : null}
+                            </div>
+                        )}
+                    />
+
+                    <label className="block">
+                        <span className="text-sm font-medium text-gray-300">Imagen de Portada</span>
+                        <div className="mt-1 flex items-center gap-3">
+                            <div className="flex-1 relative cursor-pointer group">
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                    onChange={handleImageUpload}
+                                    disabled={isUploading}
+                                />
+                                <div className="w-full bg-black/40 border border-white/10 border-dashed rounded-xl py-3 px-4 text-gray-400 group-hover:border-[#72004c]/50 group-hover:text-white transition-all flex items-center justify-center">
+                                    {isUploading ? <Loader variant="inverse" direction="row" text="Subiendo..." /> : (
+                                        <>
+                                            <ImageIcon className="w-5 h-5 mr-2" />
+                                            <span>{imagePreview ? "Cambiar portada" : "Subir portada"}</span>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </label>
+                </div>
             </div>
-          </label>
-        </div>
-      </div>
 
-      {/* Markdown Editor */}
-      {imagePreview && (
-        <div className="glass-panel p-6 rounded-2xl space-y-6 border-white/5">
-          <div className="space-y-4">
-            <label className="block">
-              <span className="text-sm font-medium text-gray-300">Imagen de Portada</span>
-              <img src={imagePreview} alt="Portada" className="w-full h-auto rounded-xl mt-2" />
-            </label>
-          </div>
-        </div>
-      )}
-      <div className="glass-panel rounded-2xl border-white/5 overflow-hidden flex flex-col">
-        {/* Editor Toolbar */}
-        <div className="flex items-center justify-between border-b border-white/10 px-4 py-3 bg-black/60">
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setTab("write")}
-              className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all ${tab === "write" ? "bg-[#72004c]/20 text-white" : "text-gray-400 hover:text-white hover:bg-white/5"}`}
-            >
-              <Edit3 className="w-4 h-4 mr-2" />
-              Escribir
-            </button>
-            <button
-              type="button"
-              onClick={() => setTab("preview")}
-              className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all ${tab === "preview" ? "bg-[#006f87]/20 text-white" : "text-gray-400 hover:text-white hover:bg-white/5"}`}
-            >
-              <Eye className="w-4 h-4 mr-2" />
-              Vista Previa
-            </button>
-          </div>
+            {imagePreview && (
+                <div className="glass-panel p-6 rounded-2xl space-y-6 border-white/5">
+                    <div className="space-y-4">
+                        <span className="text-sm font-medium text-gray-300">Previsualización de Portada</span>
+                        <img src={imagePreview} alt="Portada" className="w-full h-48 object-cover rounded-xl mt-2 border border-white/10" />
+                    </div>
+                </div>
+            )}
 
-          <div>
-            <input
-              type="file"
-              accept=".md,.mdx"
-              ref={fileInputRef}
-              onChange={handleMdUpload}
-              className="hidden"
-            />
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="flex items-center px-4 py-2 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-all"
-              title="Importar archivo Markdown (.md)"
-            >
-              <FileUp className="w-4 h-4 mr-2" />
-              Importar .md
-            </button>
-          </div>
-        </div>
+            <div className="glass-panel rounded-2xl border-white/5 overflow-hidden flex flex-col">
+                <div className="flex items-center justify-between border-b border-white/10 px-4 py-3 bg-black/60">
+                    <div className="flex gap-2">
+                        <button
+                            type="button"
+                            onClick={() => setTab("write")}
+                            className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all ${tab === "write" ? "bg-[#72004c]/20 text-white" : "text-gray-400 hover:text-white hover:bg-white/5"}`}
+                        >
+                            <Edit3 className="w-4 h-4 mr-2" />
+                            Escribir
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setTab("preview")}
+                            className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all ${tab === "preview" ? "bg-[#006f87]/20 text-white" : "text-gray-400 hover:text-white hover:bg-white/5"}`}
+                        >
+                            <Eye className="w-4 h-4 mr-2" />
+                            Vista Previa
+                        </button>
+                    </div>
+                    <div>
+                        <input type="file" accept=".md,.mdx" ref={fileInputRef} onChange={handleMdUpload} className="hidden" />
+                        <button type="button" onClick={() => fileInputRef.current?.click()} className="flex items-center px-4 py-2 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-all">
+                            <FileUp className="w-4 h-4 mr-2" />
+                            Importar .md
+                        </button>
+                    </div>
+                </div>
 
-        {/* Editor Body */}
-        <div className="min-h-[400px] bg-[#060609] p-4">
-          {tab === "write" ? (
-            <textarea
-              name="content"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              className="w-full min-h-[400px] bg-transparent resize-y outline-none text-gray-300 font-mono text-sm leading-relaxed"
-              placeholder="# Escribe el contenido de tu artículo aquí...&#10;&#10;Puedes usar sintaxis Markdown o HTML puro para darle formato. ¡También puedes arrastrar o importar un archivo .md!"
-              required
-            />
-          ) : (
-            <div className="min-h-[400px] text-gray-300 font-sans leading-relaxed">
-              {content ? (
-                <Post content={content} />
-              ) : (
-                <p className="text-gray-500 italic mt-8 text-center">No hay contenido para previsualizar. Escribe algo en la pestaña "Escribir".</p>
-              )}
+                <div className="min-h-[400px] bg-[#060609] p-4">
+                    <form.Field
+                        name="content"
+                        children={(field) => (
+                            <>
+                                {tab === "write" ? (
+                                    <textarea
+                                        value={field.state.value}
+                                        onChange={(e) => field.handleChange(e.target.value)}
+                                        className="w-full min-h-[400px] bg-transparent resize-y outline-none text-gray-300 font-mono text-sm leading-relaxed"
+                                        placeholder="# Escribe el contenido de tu artículo aquí...&#10;&#10;Puedes usar sintaxis Markdown o HTML puro."
+                                    />
+                                ) : (
+                                    <div className="min-h-[400px] text-gray-300 font-sans leading-relaxed">
+                                        {field.state.value ? <Post content={field.state.value} /> : <p className="text-gray-500 italic mt-8 text-center">No hay contenido para previsualizar.</p>}
+                                    </div>
+                                )}
+                                {field.state.meta.errors ? <p className="text-red-500 text-xs mt-2">{field.state.meta.errors.join(", ")}</p> : null}
+                            </>
+                        )}
+                    />
+                </div>
             </div>
-          )}
-        </div>
-      </div>
 
-      <div className="flex justify-end">
-        <GlassButton type="submit" variant="primary" className="pl-6 pr-8">
-          <Send className="w-4 h-4 mr-2" />
-          Publicar Artículo
-        </GlassButton>
-      </div>
-    </form>
-  );
+            <div className="flex justify-end gap-4">
+                <form.Field
+                    name="publishedAt"
+                    children={(field) => (
+                        <form.Subscribe
+                            selector={(state) => [state.canSubmit, state.isSubmitting]}
+                            children={([canSubmit, isFormSubmitting]) => (
+                                <>
+                                    <GlassButton
+                                        type="button"
+                                        disabled={!canSubmit || isFormSubmitting || isUploading}
+                                        onClick={() => {
+                                            field.handleChange(null);
+                                            form.handleSubmit();
+                                        }}
+                                        className="px-6 border-white/10 text-gray-300 hover:text-white"
+                                    >
+                                        <Save className="w-4 h-4 mr-2" />
+                                        Guardar Borrador
+                                    </GlassButton>
+
+                                    <GlassButton
+                                        type="button"
+                                        disabled={!canSubmit || isFormSubmitting || isUploading}
+                                        onClick={() => {
+                                            field.handleChange(new Date().toISOString());
+                                            form.handleSubmit();
+                                        }}
+                                        variant="primary"
+                                        className="pl-6 pr-8"
+                                    >
+                                        {isFormSubmitting && field.state.value !== null ? (
+                                            <Loader variant="inverse" direction="row" text="Publicando..." />
+                                        ) : (
+                                            <>
+                                                <Send className="w-4 h-4 mr-2" />
+                                                {initialData?.publishedAt ? "Actualizar Artículo" : "Publicar Artículo"}
+                                            </>
+                                        )}
+                                    </GlassButton>
+                                </>
+                            )}
+                        />
+                    )}
+                />
+            </div>
+        </form>
+    );
 }
