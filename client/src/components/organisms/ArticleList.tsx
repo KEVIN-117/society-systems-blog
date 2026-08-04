@@ -68,8 +68,7 @@ export function ArticleList({
             setIsDeleting(true);
             await articleService.deleteArticle(articleToDelete);
 
-            setArticles(articles.filter(a => a.documentId !== articleToDelete));
-
+            setArticles((prev) => prev.filter(a => a.documentId !== articleToDelete))
             toast({
                 title: "Artículo eliminado",
                 description: "El artículo ha sido eliminado correctamente.",

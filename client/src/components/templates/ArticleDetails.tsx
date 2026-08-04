@@ -28,6 +28,7 @@ export default function ArticleDetailPage({ documentId, readOnly = false, backHr
         const fetchArticle = async () => {
             try {
                 const response = await articleService.getArticleById(documentId);
+
                 setArticle(response.data);
             } catch (error) {
                 toast({

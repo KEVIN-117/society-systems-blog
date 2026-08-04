@@ -6,12 +6,13 @@ import { GlassButton } from "@/components/atoms/GlassButton";
 import { Badge } from "@/components/ui/badge";
 import { FileUp, Edit3, Eye, Image as ImageIcon, Send, X, Save } from "lucide-react";
 import Post from "../molecules/Post";
-import { Article, Category, CreateArticleInput } from "@/model/article.schema";
+import { Article, Category, CreateArticleInput, createArticleSchema } from "@/model/article.schema";
 import { articleService } from "@/actions/article";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { apiClient } from "@/datasource/remote/axios";
 import { Loader } from "@/components/atoms/Loader";
+import { ErrorFieldInfo } from "@/components/atoms/ErrorFieldInfo";
 
 interface ArticleFormProps {
     initialData?: Article;
@@ -58,6 +59,7 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
             try {
                 const payload = {
                     ...value,
+                    slug: value.slug || value.title.toLowerCase().replace(/\s/g, '-').replace(/[^a-z0-9-]/g, ''),
                     cover: coverId
                 };
 
@@ -146,7 +148,7 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
                                     className="mt-1 w-full bg-black/40 border border-white/10 rounded-xl py-3 px-4 text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-[#72004c]/50 transition-all font-heading text-lg"
                                     placeholder="Escribe un título llamativo..."
                                 />
-                                {field.state.meta.errors ? <p className="text-red-500 text-xs mt-1">{field.state.meta.errors.join(", ")}</p> : null}
+                                <ErrorFieldInfo field={field} />
                             </label>
                         )}
                     />
@@ -168,7 +170,7 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
                                     className="mt-1 w-full bg-black/40 border border-white/10 rounded-xl py-3 px-4 text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-[#72004c]/50 transition-all"
                                     placeholder="Un resumen que atraiga al lector..."
                                 />
-                                {field.state.meta.errors ? <p className="text-red-500 text-xs mt-1">{field.state.meta.errors.join(", ")}</p> : null}
+                                <ErrorFieldInfo field={field} />
                             </label>
                         )}
                     />
@@ -215,7 +217,7 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
                                         })}
                                     </div>
                                 )}
-                                {field.state.meta.errors ? <p className="text-red-500 text-xs mt-1">{field.state.meta.errors.join(", ")}</p> : null}
+                                <ErrorFieldInfo field={field} />
                             </div>
                         )}
                     />
@@ -300,7 +302,7 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
                                         {field.state.value ? <Post content={field.state.value} /> : <p className="text-gray-500 italic mt-8 text-center">No hay contenido para previsualizar.</p>}
                                     </div>
                                 )}
-                                {field.state.meta.errors ? <p className="text-red-500 text-xs mt-2">{field.state.meta.errors.join(", ")}</p> : null}
+                                <ErrorFieldInfo field={field} />
                             </>
                         )}
                     />

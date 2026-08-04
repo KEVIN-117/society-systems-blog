@@ -27,9 +27,9 @@ export default factories.createCoreController('api::article.article', ({ strapi 
         ctx.body = result;
     },
 
-    /**
+    /*
      * GET /api/articles/:documentId — Public: returns a single published article.
-     */
+    */
     async findOne(ctx) {
         const { documentId } = ctx.params;
 
@@ -45,11 +45,61 @@ export default factories.createCoreController('api::article.article', ({ strapi 
     },
 
     /**
+     * GET /api/articles/:documentId — Public: returns a single published article.
+     * If the article is a draft, it requires authentication and owner verification.
+     */
+    /*async findOne(ctx) {
+        const { documentId } = ctx.params;
+
+        const article = await strapi
+            .service('api::article.article-service')
+            .getArticle(documentId);
+
+        console.log("Article:", article);
+
+
+        if (!article) {
+            return ctx.notFound('Article not found');
+        }
+
+        // If the article is published, it's public
+        if (article.createdAt) {
+            ctx.body = { data: article };
+            return;
+        }
+
+        // If the article is a draft, we must manually verify ownership
+        // because the route is configured with `auth: false`(bypassing middleware).
+        const authHeader = ctx.request.header.authorization;
+        if (!authHeader) {
+            return ctx.forbidden('You cannot view this unpublished article');
+        }
+
+        try {
+            const { id } = await strapi.plugins['users-permissions'].services.jwt.getToken(ctx);
+            if (!id) {
+                return ctx.forbidden('Invalid token');
+            }
+
+            const profile = await strapi
+                .service('api::author.current-user')
+                .getProfile(id);
+
+            if (!profile?.author?.documentId || article.author?.documentId !== profile.author.documentId) {
+                return ctx.forbidden('You are not the owner of this draft');
+            }
+
+            ctx.body = { data: article };
+        } catch (error) {
+            return ctx.forbidden('You cannot view this unpublished article');
+        }
+    },*/
+
+    /**
      * GET /api/articles/me — Private: returns articles belonging to the authenticated user.
      */
     async findMine(ctx) {
         const user = ctx.state.user;
-        strapi.log.debug('USER', user);
 
         if (!user) {
             return ctx.unauthorized();

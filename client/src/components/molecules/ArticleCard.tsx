@@ -14,7 +14,7 @@ interface ArticleCardProps {
 }
 
 export function ArticleCard({ article, onDelete, readOnly = false, basePath = "/dashboard/articles" }: ArticleCardProps) {
-    const coverUrl = article.cover?.url 
+    const coverUrl = article.cover?.url
         ? (article.cover.url.startsWith('http') ? article.cover.url : `${process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337'}${article.cover.url}`)
         : null;
 
@@ -29,9 +29,9 @@ export function ArticleCard({ article, onDelete, readOnly = false, basePath = "/
             {/* Image Container with Hover Overlay */}
             <div className="relative h-48 w-full overflow-hidden bg-[#0a0a0f] flex-shrink-0">
                 {coverUrl ? (
-                    <img 
-                        src={coverUrl} 
-                        alt={article.title} 
+                    <img
+                        src={coverUrl}
+                        alt={article.title}
                         className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                     />
                 ) : (
@@ -39,7 +39,7 @@ export function ArticleCard({ article, onDelete, readOnly = false, basePath = "/
                         <span className="text-white/20 font-heading text-2xl font-bold tracking-widest">SOCITEC</span>
                     </div>
                 )}
-                
+
                 {/* Status Badge */}
                 <div className="absolute top-3 right-3 z-10 flex gap-2">
                     {isDraft && (
@@ -65,22 +65,18 @@ export function ArticleCard({ article, onDelete, readOnly = false, basePath = "/
 
                 {/* Hover Action Overlay */}
                 <div className="absolute inset-0 bg-black/60 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-3 z-20">
-                    <Link href={`${basePath}/${article.documentId}`}>
-                        <button className="p-3 rounded-full bg-white/10 hover:bg-[#00b4db] text-white transition-all transform hover:scale-110" title="Ver Artículo">
-                            <Eye className="w-5 h-5" />
-                        </button>
+                    <Link href={`${basePath}/${article.documentId}`} className="p-3 rounded-full bg-white/10 hover:bg-[#00b4db] text-white transition-all transform hover:scale-110" title="Ver Artículo" aria-label="Ver Artículo">
+                        <Eye className="w-5 h-5" />
                     </Link>
                     {!readOnly && (
-                        <Link href={`${basePath}/${article.documentId}/edit`}>
-                            <button className="p-3 rounded-full bg-white/10 hover:bg-[#72004c] text-white transition-all transform hover:scale-110" title="Editar Artículo">
-                                <Edit3 className="w-5 h-5" />
-                            </button>
+                        <Link href={`${basePath}/${article.documentId}/edit`} className="p-3 rounded-full bg-white/10 hover:bg-[#72004c] text-white transition-all transform hover:scale-110" title="Editar Artículo" aria-label="Editar Artículo">
+                            <Edit3 className="w-5 h-5" />
                         </Link>
                     )}
                     {!readOnly && onDelete && (
-                        <button 
+                        <button
                             onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDelete(article.documentId); }}
-                            className="p-3 rounded-full bg-white/10 hover:bg-red-500 text-white transition-all transform hover:scale-110" 
+                            className="p-3 rounded-full bg-white/10 hover:bg-red-500 text-white transition-all transform hover:scale-110"
                             title="Eliminar Artículo"
                         >
                             <Trash2 className="w-5 h-5" />

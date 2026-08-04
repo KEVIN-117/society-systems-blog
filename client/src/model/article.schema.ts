@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { UserProfile } from './user.schema';
 
 export interface Category {
     id: number;
@@ -89,7 +88,7 @@ export const createArticleSchema = z.object({
     title: z.string().min(3, "El título debe tener al menos 3 caracteres").max(100, "El título no puede exceder 100 caracteres"),
     description: z.string().min(10, "La descripción debe tener al menos 10 caracteres").max(200, "La descripción no puede exceder 200 caracteres"),
     content: z.string().min(50, "El contenido es muy corto"),
-    slug: z.string().min(3).optional(),
+    slug: z.string().min(3),
     categories: z.array(z.string()).min(1, "Debes seleccionar al menos una categoría"),
     cover: z.number().nullable().optional(),
     publishedAt: z.string().nullable().optional(), // If null, it's a Draft

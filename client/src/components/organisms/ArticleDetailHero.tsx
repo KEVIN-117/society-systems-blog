@@ -1,4 +1,3 @@
-import * as React from "react";
 import Link from "next/link";
 import { Edit3, Clock, ArrowLeft, Calendar, User as UserIcon } from "lucide-react";
 import { Article } from "@/model/article.schema";
@@ -13,7 +12,7 @@ interface ArticleDetailHeroProps {
 }
 
 export function ArticleDetailHero({ article, readOnly = false, backHref }: ArticleDetailHeroProps) {
-    const coverUrl = article.cover?.url 
+    const coverUrl = article.cover?.url
         ? (article.cover.url.startsWith('http') ? article.cover.url : `${process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337'}${article.cover.url}`)
         : null;
 
@@ -33,9 +32,9 @@ export function ArticleDetailHero({ article, readOnly = false, backHref }: Artic
             {/* Background Cover Image with Heavy Blur/Gradient */}
             {coverUrl ? (
                 <div className="absolute inset-0">
-                    <img 
-                        src={coverUrl} 
-                        alt={article.title} 
+                    <img
+                        src={coverUrl}
+                        alt={article.title}
                         className="h-full w-full object-cover scale-105" // scale prevents blurry edges when blurring
                     />
                     {/* Gradient overlays to ensure text readability */}
@@ -65,7 +64,7 @@ export function ArticleDetailHero({ article, readOnly = false, backHref }: Artic
 
             {/* Content */}
             <div className="relative z-10 w-full max-w-4xl mx-auto px-6 py-12 flex flex-col items-center text-center">
-                
+
                 {/* Categories */}
                 <div className="flex flex-wrap justify-center gap-2 mb-6">
                     {isDraft && (
@@ -84,7 +83,7 @@ export function ArticleDetailHero({ article, readOnly = false, backHref }: Artic
                 <h1 className="font-heading text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight max-w-3xl">
                     {article.title}
                 </h1>
-                
+
                 {/* Description */}
                 {article.description && (
                     <p className="text-xl text-gray-300 max-w-2xl mb-10 leading-relaxed font-light">
@@ -94,7 +93,7 @@ export function ArticleDetailHero({ article, readOnly = false, backHref }: Artic
 
                 {/* Meta Information (Author, Date, Reading Time) */}
                 <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-gray-300 bg-black/20 px-6 py-3 rounded-full border border-white/5 backdrop-blur-md">
-                    
+
                     {/* Author */}
                     <div className="flex items-center gap-2">
                         {avatarUrl ? (
@@ -108,7 +107,7 @@ export function ArticleDetailHero({ article, readOnly = false, backHref }: Artic
                     </div>
 
                     <div className="w-1 h-1 rounded-full bg-gray-500" />
-                    
+
                     {/* Date */}
                     <div className="flex items-center gap-2">
                         <Calendar className="w-4 h-4 text-[#00b4db]" />
