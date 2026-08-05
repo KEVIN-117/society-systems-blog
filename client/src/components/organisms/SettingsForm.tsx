@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useForm } from "@tanstack/react-form-nextjs";
-import type { AnyFieldApi } from '@tanstack/react-form-nextjs';
 import { updatePasswordSchema, updateProfileSchema, type UserProfile } from "@/model/user.schema";
 import { userService } from "@/actions/user";
 import { Input } from "@/components/ui/input";
@@ -14,20 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { Loader } from "../atoms/Loader";
-
-function FieldInfo({ field }: { field: AnyFieldApi }) {
-    return (
-        <>
-            {field.state.meta.isTouched && field.state.meta.errors.length ? (
-                <>
-                    {field.state.meta.errors.map((error, index) => (
-                        <span key={index} className="text-red-500 text-xs mt-1 block">{error.message}</span>
-                    ))}
-                </>
-            ) : null}
-        </>
-    )
-}
+import { ErrorFieldInfo } from "../atoms/ErrorFieldInfo";
 
 export function SettingsForm({ initialData }: { initialData: UserProfile }) {
     const { toast } = useToast();
@@ -219,7 +205,7 @@ export function SettingsForm({ initialData }: { initialData: UserProfile }) {
                                         onChange={(e) => field.handleChange(e.target.value)}
                                         onBlur={() => field.handleBlur()}
                                     />
-                                    <FieldInfo field={field} />
+                                    <ErrorFieldInfo field={field} />
                                 </>
                             )}
                         />
@@ -245,7 +231,7 @@ export function SettingsForm({ initialData }: { initialData: UserProfile }) {
                                             onChange={(e) => field.handleChange(e.target.value)}
                                             onBlur={() => field.handleBlur()}
                                         />
-                                        <FieldInfo field={field} />
+                                        <ErrorFieldInfo field={field} />
                                     </>
                                 )}
                             />
@@ -266,7 +252,7 @@ export function SettingsForm({ initialData }: { initialData: UserProfile }) {
                                             onChange={(e) => field.handleChange(e.target.value)}
                                             onBlur={() => field.handleBlur()}
                                         />
-                                        <FieldInfo field={field} />
+                                        <ErrorFieldInfo field={field} />
                                     </>
                                 )}
                             />
@@ -320,7 +306,7 @@ export function SettingsForm({ initialData }: { initialData: UserProfile }) {
                                         onChange={(e) => field.handleChange(e.target.value)}
                                         onBlur={() => field.handleBlur()}
                                     />
-                                    <FieldInfo field={field} />
+                                    <ErrorFieldInfo field={field} />
                                 </>
                             )}
                         />
@@ -342,7 +328,7 @@ export function SettingsForm({ initialData }: { initialData: UserProfile }) {
                                             onChange={(e) => field.handleChange(e.target.value)}
                                             onBlur={() => field.handleBlur()}
                                         />
-                                        <FieldInfo field={field} />
+                                        <ErrorFieldInfo field={field} />
                                     </>
                                 )}
                             />
@@ -363,7 +349,7 @@ export function SettingsForm({ initialData }: { initialData: UserProfile }) {
                                             onChange={(e) => field.handleChange(e.target.value)}
                                             onBlur={() => field.handleBlur()}
                                         />
-                                        <FieldInfo field={field} />
+                                        <ErrorFieldInfo field={field} />
                                     </>
                                 )}
                             />

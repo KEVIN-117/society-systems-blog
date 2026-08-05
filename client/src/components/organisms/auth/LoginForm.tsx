@@ -11,21 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-
-export function FieldInfo({ field }: { field: AnyFieldApi }) {
-
-    return (
-        <>
-            {field.state.meta.isTouched && field.state.meta.errors.length ? (
-                <>
-                    {field.state.meta.errors.map((error, index) => (
-                        <span key={index} className="text-red-500 text-xs mt-1 block">{error.message}</span>
-                    ))}
-                </>
-            ) : null}
-        </>
-    )
-}
+import { ErrorFieldInfo } from "@/components/atoms/ErrorFieldInfo";
 
 export function LoginForm() {
     const router = useRouter();
@@ -97,7 +83,7 @@ export function LoginForm() {
                                         onBlur={() => field.handleBlur()}
                                     />
                                 </div>
-                                <FieldInfo field={field} />
+                                <ErrorFieldInfo field={field} />
                             </>
                         )}
                     />
@@ -129,7 +115,7 @@ export function LoginForm() {
                                         onBlur={() => field.handleBlur()}
                                     />
                                 </div>
-                                <FieldInfo field={field} />
+                                <ErrorFieldInfo field={field} />
                             </>
                         )}
                     />
