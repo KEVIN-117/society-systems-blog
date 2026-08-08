@@ -1,3 +1,5 @@
+import type { ArticleCardArticle } from "@/model/article.schema";
+
 export interface StrapiMedia {
   url: string;
   alternativeText: string | null;
@@ -11,24 +13,9 @@ export interface PublicAuthor {
   avatar: StrapiMedia | null;
 }
 
-export interface ArticleSummary {
-  documentId: string;
-  title: string;
-  description: string | null;
-  content: string | null;
+export interface ArticleSummary extends ArticleCardArticle {
   slug: string;
-  publishedAt: string | null;
   createdAt: string;
-  cover?: {
-    url: string;
-  } | null;
-  categories: Array<{
-    id: number;
-    name: string;
-  }>;
-  author?: {
-    name: string;
-  };
 }
 
 export interface PaginationMeta {

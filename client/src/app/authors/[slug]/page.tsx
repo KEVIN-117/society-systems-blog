@@ -65,11 +65,6 @@ export default async function AuthorPage({
   const avatarUrl = author.avatar?.url
     ? getStrapiUrl(author.avatar.url)
     : undefined;
-  const dateFormatter = new Intl.DateTimeFormat("es-BO", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
 
   return (
     <>
@@ -141,18 +136,14 @@ export default async function AuthorPage({
               </Empty>
             ) : (
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {articles.map((article, index) => {
-                  const category = article.categories[0]?.name || "General";
-                  const articleDate = article.publishedAt || article.createdAt;
-                  return (
-                    <ArticleCard
-                      key={article.documentId}
-                      article={article}
-                      readOnly
-                      basePath="/articles"
-                    />
-                  );
-                })}
+                {articles.map((article) => (
+                  <ArticleCard
+                    key={article.documentId}
+                    article={article}
+                    readOnly
+                    basePath="/articles"
+                  />
+                ))}
               </div>
             )}
 

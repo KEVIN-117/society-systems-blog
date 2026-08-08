@@ -1,24 +1,8 @@
-import * as React from "react";
+import { Clock, Edit3, Eye, Trash2, User } from "lucide-react";
 import Link from "next/link";
-import { Eye, Edit3, Trash2, Clock, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-interface ArticleCardArticle {
-  documentId: string;
-  title: string;
-  description: string | null;
-  content: string | null;
-  publishedAt: string | null;
-  cover?: {
-    url: string;
-  } | null;
-  categories?: Array<{
-    id: number;
-    name: string;
-  }>;
-  author?: {
-    name: string;
-  };
-}
+import { getStrapiUrl } from "@/lib/strapi";
+import type { ArticleCardArticle } from "@/model/article.schema";
 
 interface ArticleCardProps {
   article: ArticleCardArticle;
@@ -35,11 +19,7 @@ export function ArticleCard({
   readOnly = false,
   basePath = "/dashboard/articles",
 }: ArticleCardProps) {
-  const coverUrl = article.cover?.url
-    ? article.cover.url.startsWith("http")
-      ? article.cover.url
-      : `${process.env.NEXT_PUBLIC_STRAPI_URL || "http://localhost:1337"}${article.cover.url}`
-    : null;
+  const coverUrl = article.cover?.url ? getStrapiUrl(article.cover.url) : null;
 
   // Estimate reading time (rough estimation: 200 words per minute)
   const wordCount = article.content?.split(/\s+/).length || 0;
