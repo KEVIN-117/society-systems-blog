@@ -33,16 +33,29 @@ export interface Media {
     publishedAt: string | null;
 }
 
-export interface Article {
-    id: number;
+export interface ArticleCardArticle {
     documentId: string;
     title: string;
     description: string | null;
     content: string | null;
+    publishedAt: string | null;
+    cover?: {
+        url: string;
+    } | null;
+    categories?: Array<{
+        id: number;
+        name: string;
+    }>;
+    author?: {
+        name: string;
+    };
+}
+
+export interface Article extends ArticleCardArticle {
+    id: number;
     slug: string;
     createdAt: string;
     updatedAt: string;
-    publishedAt: string | null;
     cover?: Media | null;
     categories?: Category[];
     author?: {

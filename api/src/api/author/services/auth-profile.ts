@@ -2,7 +2,19 @@
  * auth-profile service
  */
 
-import { Core } from '@strapi/strapi';
+import { Core } from "@strapi/strapi";
+
+function createAuthorSlug(name: string, userId: number | string) {
+  const normalizedName = name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  return `${normalizedName || "author"}-${userId}`;
+}
 
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   /**
@@ -15,19 +27,21 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     }
 
     try {
-      // Usamos el Document Service API de Strapi 5
-      const newAuthor = await strapi.documents('api::author.author').create({
+      const name = user.username || user.email || `author-${user.id}`;
+
+      const newAuthor = await strapi.documents("api::author.author").create({
         data: {
-          name: user.username || user.email,
+          name,
+          slug: createAuthorSlug(name, user.id),
           email: user.email,
           avatar: null,
-          user: user.documentId || user.id, // Relación con el User
+          user: user.documentId || user.id,
         },
       });
 
       return newAuthor;
     } catch (error) {
-      strapi.log.error('Error creando el Author para el usuario:', error);
+      strapi.log.error("Error creando el Author para el usuario:", error);
       throw error;
     }
   },
