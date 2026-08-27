@@ -1,21 +1,53 @@
 version: '3.8'
+
 services:
-  db:
-    image: postgres:15-alpine
-    container_name: society-systems-db
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: society_systems_api
+    restart: unless-stopped
+    env_file:
+      - ./api/.env
     environment:
-      POSTGRES_USER: society-systems
-      POSTGRES_PASSWORD: 1234567890
-      POSTGRES_DB: society_systems
+      - NODE_ENV=production
+      # Server
+      - HOST=0.0.0.0
+      - PORT=1337
+      # Secrets
+      - APP_KEYS=Nklgy7rB5lHevhypjahjHQ==,TwE3jtH4uwS2IpLBGqfSFQ==,22qaq/TZLOtgKWioaphurg==,+jxhxkAXP62jonvRop45zg==
+      - API_TOKEN_SALT=RsAc6oRshTrowZzIpo7PmQ==
+      - ADMIN_JWT_SECRET=dhzQNw7EIHqcMkX0+8F3WA==
+      - JWT_SECRET=tegbjD4raqMoHjppbiL1dw==
+      - TRANSFER_TOKEN_SALT=M9dQS7Lnbm6VQ71UsUrzoA==
+      - ENCRYPTION_KEY=7D/GkffEQWOQRQ6uKmrlSg==
+      # Database
+      - DATABASE_CLIENT=postgres
+      - DATABASE_HOST=dpg-d9n8nufqj5pc73eefkjg-a.oregon-postgres.render.com
+      - DATABASE_PORT=5432
+      - DATABASE_NAME=society_systems_db
+      - DATABASE_USERNAME=society_systems
+      - DATABASE_PASSWORD=CYA2X1W2D7WwY3805dA7CE8wnSVRkFYO
+      - DATABASE_SSL=true
     ports:
-      - "5432:5432"
+      - '1337:1337'
     volumes:
-      - society-systems-db:/var/lib/postgresql/data
-    networks:
-      - society-systems
+      # Temporary volume for uploads until Cloudinary is fully configured in prod
+      - strapi_uploads:/app/public/uploads
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: society_systems_client
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_STRAPI_URL=http://api:1337
+    ports:
+      - '3000:3000'
 
 volumes:
-  society-systems-db:
-
-networks:
-  society-systems:
+  strapi_uploads:

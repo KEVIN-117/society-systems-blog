@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { Article } from "@/model/article.schema";
 import { PenTool, Loader2 } from "lucide-react";
-import { articleService } from "@/actions/article";
+import * as articleService from "@/actions/article";
 
 interface Props {
     documentId: string;

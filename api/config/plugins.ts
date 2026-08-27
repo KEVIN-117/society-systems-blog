@@ -25,11 +25,14 @@ const deniedExecutableTypes = [
 const config = ({ env }: Core.Config.Shared.ConfigParams): Core.Config.Plugin => ({
   'users-permissions': {
     config: {
+      jwt: {
+        expiresIn: '14d',
+      },
       jwtManagement: 'refresh',
       sessions: {
         httpOnly: true,
         expiresIn: '14d',
-        accessTokenLifespan: 600,       // 10 minutos
+        accessTokenLifespan: 1209600,       // 14 días (en lugar de 600)
         maxRefreshTokenLifespan: 2592000, // 30 días
         idleRefreshTokenLifespan: 1209600, // 14 días
         maxSessionLifespan: 86400,       // 1 día

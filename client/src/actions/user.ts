@@ -1,14 +1,14 @@
-import { apiClient } from '@/datasource/remote/axios';
+import axiosClient from "@/datasource/local/axios";
 import { UserProfile, UpdateProfileInput, UpdatePasswordInput } from '@/model/user.schema';
 
 export const userService = {
   getProfile: async (): Promise<UserProfile> => {
-    const response = await apiClient.get<UserProfile>('/users/me');
+    const response = await axiosClient.get<UserProfile>('/users/me');
     return response.data;
   },
 
   updateProfile: async (data: UpdateProfileInput): Promise<UserProfile> => {
-    const response = await apiClient.put<UserProfile>('/users/me', data);
+    const response = await axiosClient.put<UserProfile>('/users/me', data);
     return response.data;
   },
 
@@ -17,7 +17,7 @@ export const userService = {
     formData.append('files', file);
 
     // El interceptor/axios lo enviará al endpoint BFF en nextjs
-    const response = await apiClient.post('/upload', formData, {
+    const response = await axiosClient.post('/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -28,7 +28,7 @@ export const userService = {
   },
 
   updatePassword: async (data: UpdatePasswordInput): Promise<UserProfile> => {
-    const response = await apiClient.post<UserProfile>('/users/me/password', data);
+    const response = await axiosClient.post<UserProfile>('/users/me/password', data);
     return response.data;
   }
 };

@@ -1,29 +1,17 @@
-"use client";
-
 import * as React from "react";
 import { ArticleCard } from "@/components/molecules/ArticleCard";
-import { Article } from "@/model/article.schema";
-import { articleService } from "@/actions/article";
-import { Loader2 } from "lucide-react";
+import * as articleService from "@/actions/article";
 import Link from "next/link";
 
-export function ArticleGrid() {
-    const [articles, setArticles] = React.useState<Article[]>([]);
-    const [isLoading, setIsLoading] = React.useState(true);
+export async function ArticleGrid() {
+    let articles: any[] = [];
 
-    React.useEffect(() => {
-        const fetchArticles = async () => {
-            try {
-                const response = await articleService.getArticles(1, 3);
-                setArticles(response.data);
-            } catch (error) {
-                console.error("Failed to fetch latest articles:", error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        fetchArticles();
-    }, []);
+    try {
+        const response = await articleService.getArticles(1, 3);
+        articles = response.data || [];
+    } catch (error) {
+        console.error("Failed to fetch latest articles:", error);
+    }
 
     return (
         <section id="blog" className="py-24 relative">
@@ -42,14 +30,7 @@ export function ArticleGrid() {
                     </Link>
                 </div>
 
-                {isLoading ? (
-                    <div className="flex items-center justify-center min-h-[300px]">
-                        <div className="flex flex-col items-center text-[#00b4db]">
-                            <Loader2 className="w-8 h-8 animate-spin mb-3" />
-                            <p className="text-sm font-medium text-gray-400">Cargando artículos...</p>
-                        </div>
-                    </div>
-                ) : articles.length === 0 ? (
+                {articles.length === 0 ? (
                     <div className="flex items-center justify-center min-h-[200px]">
                         <p className="text-gray-500">No hay artículos publicados todavía.</p>
                     </div>

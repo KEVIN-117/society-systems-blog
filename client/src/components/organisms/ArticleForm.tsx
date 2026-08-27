@@ -7,12 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { FileUp, Edit3, Eye, Image as ImageIcon, Send, X, Save } from "lucide-react";
 import Post from "../molecules/Post";
 import { Article, Category, CreateArticleInput, createArticleSchema } from "@/model/article.schema";
-import { articleService } from "@/actions/article";
+import * as articleService from "@/actions/article";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
-import { apiClient } from "@/datasource/remote/axios";
+import axiosClient from "@/datasource/local/axios";
 import { Loader } from "@/components/atoms/Loader";
 import { ErrorFieldInfo } from "@/components/atoms/ErrorFieldInfo";
+import { CoverPicker } from "@/components/molecules/CoverPicker";
 
 interface ArticleFormProps {
     initialData?: Article;
@@ -27,7 +28,6 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
             : null
     );
     const [coverId, setCoverId] = React.useState<number | null>(initialData?.cover?.id || null);
-    const [isUploading, setIsUploading] = React.useState(false);
 
     const fileInputRef = React.useRef<HTMLInputElement>(null);
     const { toast } = useToast();
@@ -94,34 +94,9 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
         reader.readAsText(file);
     };
 
-    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        // Optimistic UI preview
-        const reader = new FileReader();
-        reader.onload = (ev) => setImagePreview(ev.target?.result as string);
-        reader.readAsDataURL(file);
-
-        try {
-            setIsUploading(true);
-            const formData = new FormData();
-            formData.append('files', file);
-
-            const response = await apiClient.post('/upload', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-            });
-
-            if (response.data && response.data.length > 0) {
-                setCoverId(response.data[0].id);
-                toast({ title: "Portada subida", description: "La imagen se ha subido correctamente." });
-            }
-        } catch (err) {
-            toast({ variant: "destructive", title: "Error al subir", description: "No se pudo subir la imagen de portada." });
-            setImagePreview(null);
-        } finally {
-            setIsUploading(false);
-        }
+    const handleCoverSelect = (id: number, url: string) => {
+        setCoverId(id);
+        setImagePreview(url);
     };
 
     return (
@@ -225,23 +200,11 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
                     <label className="block">
                         <span className="text-sm font-medium text-gray-300">Imagen de Portada</span>
                         <div className="mt-1 flex items-center gap-3">
-                            <div className="flex-1 relative cursor-pointer group">
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                                    onChange={handleImageUpload}
-                                    disabled={isUploading}
-                                />
-                                <div className="w-full bg-black/40 border border-white/10 border-dashed rounded-xl py-3 px-4 text-gray-400 group-hover:border-[#72004c]/50 group-hover:text-white transition-all flex items-center justify-center">
-                                    {isUploading ? <Loader variant="inverse" direction="row" text="Subiendo..." /> : (
-                                        <>
-                                            <ImageIcon className="w-5 h-5 mr-2" />
-                                            <span>{imagePreview ? "Cambiar portada" : "Subir portada"}</span>
-                                        </>
-                                    )}
-                                </div>
-                            </div>
+                            <CoverPicker
+                                currentCoverId={coverId}
+                                currentPreview={imagePreview}
+                                onCoverSelect={handleCoverSelect}
+                            />
                         </div>
                     </label>
                 </div>
@@ -319,7 +282,7 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
                                 <>
                                     <GlassButton
                                         type="button"
-                                        disabled={!canSubmit || isFormSubmitting || isUploading}
+                                        disabled={!canSubmit || isFormSubmitting}
                                         onClick={() => {
                                             field.handleChange(null);
                                             form.handleSubmit();
@@ -332,7 +295,7 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
 
                                     <GlassButton
                                         type="button"
-                                        disabled={!canSubmit || isFormSubmitting || isUploading}
+                                        disabled={!canSubmit || isFormSubmitting}
                                         onClick={() => {
                                             field.handleChange(new Date().toISOString());
                                             form.handleSubmit();

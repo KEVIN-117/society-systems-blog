@@ -7,8 +7,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     try {
         const token = request.cookies.get('auth_token')?.value;
         const { documentId } = await params;
-
-        const url = new URL(`${STRAPI_URL}/api/articles/${documentId}`);
+        const searchParams = request.nextUrl.searchParams;
+        const url = new URL(`${STRAPI_URL}/api/articles/${documentId}?${searchParams.toString()}`);
 
         const headers: Record<string, string> = {
             'Content-Type': 'application/json',

@@ -7,7 +7,6 @@ import { Footer } from "@/components/organisms/Footer";
 export default function Home() {
   return (
     <>
-      <Navbar />
       <main className="flex-grow">
         <Hero />
         <AboutSection />

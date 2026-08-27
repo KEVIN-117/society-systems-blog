@@ -28,9 +28,9 @@ export default function RootLayout({
       lang="es"
       className={`dark ${inter.variable} ${spaceGrotesk.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col font-sans pt-10">
-        <Toaster />
+      <body className="min-h-full flex flex-col font-sans">
         {children}
+        <Toaster />
       </body>
     </html>
   );

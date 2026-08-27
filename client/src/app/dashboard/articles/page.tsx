@@ -4,11 +4,12 @@ import * as React from "react";
 import { ArticleList } from "@/components/organisms/ArticleList";
 import { PenTool, Loader2, Search, X } from "lucide-react";
 import Link from "next/link";
-import { articleService } from "@/actions/article";
+import * as articleService from "@/actions/article";
 import { Article, Category } from "@/model/article.schema";
 import { useSearchParams, useRouter } from "next/navigation";
+import { Suspense } from "react";
 
-export default function ArticlesPage() {
+function ArticlesPageContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const [articles, setArticles] = React.useState<Article[]>([]);
@@ -21,7 +22,6 @@ export default function ArticlesPage() {
     const currentSearch = searchParams.get('search') || '';
     const currentCategory = searchParams.get('category') || '';
 
-    // Fetch categories for filters
     React.useEffect(() => {
         const fetchCategories = async () => {
             try {
@@ -34,7 +34,6 @@ export default function ArticlesPage() {
         fetchCategories();
     }, []);
 
-    // Fetch only MY articles
     React.useEffect(() => {
         const fetchArticles = async () => {
             setIsLoading(true);
@@ -101,7 +100,6 @@ export default function ArticlesPage() {
                 </Link>
             </div>
 
-            {/* Search & Category Filters */}
             <div className="relative z-10 mb-8 space-y-4">
                 <form onSubmit={handleSearch} className="relative max-w-xl">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
@@ -126,11 +124,10 @@ export default function ArticlesPage() {
                 <div className="flex flex-wrap gap-2">
                     <button
                         onClick={() => updateFilters({ category: '' })}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                            !currentCategory
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${!currentCategory
                                 ? 'bg-gradient-to-r from-[#72004c] to-[#00b4db] text-white'
                                 : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-white/10'
-                        }`}
+                            }`}
                     >
                         Todos
                     </button>
@@ -138,11 +135,10 @@ export default function ArticlesPage() {
                         <button
                             key={cat.id}
                             onClick={() => updateFilters({ category: cat.slug })}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                                currentCategory === cat.slug
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${currentCategory === cat.slug
                                     ? 'bg-gradient-to-r from-[#72004c] to-[#00b4db] text-white'
                                     : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-white/10'
-                            }`}
+                                }`}
                         >
                             {cat.name}
                         </button>
@@ -168,5 +164,20 @@ export default function ArticlesPage() {
                 )}
             </div>
         </div>
+    );
+}
+
+export default function ArticlesPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex items-center justify-center min-h-[400px]">
+                <div className="flex flex-col items-center text-[#00b4db]">
+                    <Loader2 className="w-10 h-10 animate-spin mb-4" />
+                    <p className="text-sm font-medium">Cargando artículos...</p>
+                </div>
+            </div>
+        }>
+            <ArticlesPageContent />
+        </Suspense>
     );
 }

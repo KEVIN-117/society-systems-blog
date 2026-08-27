@@ -13,13 +13,11 @@ export async function GET(request: NextRequest) {
         const searchParams = request.nextUrl.searchParams;
         const queryString = searchParams.toString();
 
-        const url = new URL(`${STRAPI_URL}/api/articles/me?${queryString}`);
-
-        const response = await fetch(url.toString(), {
+        const response = await fetch(`${STRAPI_URL}/api/upload/files?${queryString}`, {
             method: 'GET',
             headers: {
-                'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
             },
         });
 
@@ -30,7 +28,10 @@ export async function GET(request: NextRequest) {
         }
 
         return NextResponse.json(data);
-    } catch (error) {
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    } catch (error: any) {
+        return NextResponse.json(
+            { error: error.message || 'Internal Server Error' },
+            { status: 500 }
+        );
     }
 }

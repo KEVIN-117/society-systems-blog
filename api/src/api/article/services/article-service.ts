@@ -29,10 +29,20 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         sort?: string;
         search?: string;
         category?: string;
+        slug?: string;
+        excludeId?: string;
     }) {
-        const { page = 1, pageSize = 10, sort = 'createdAt:desc', search, category } = params;
+        const { page = 1, pageSize = 10, sort = 'createdAt:desc', search, category, slug, excludeId } = params;
 
         const filters: any = {};
+
+        if (slug) {
+            filters.slug = { $eq: slug };
+        }
+
+        if (excludeId) {
+            filters.documentId = { $ne: excludeId };
+        }
 
         // Full-text search on title and description
         if (search) {
@@ -87,6 +97,17 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
             populate: ARTICLE_POPULATE,
         });
 
+        if (article && !article.publishedAt) {
+            // Check if there is a published version
+            const publishedVersion = await strapi.db.query('api::article.article').findOne({
+                where: { documentId, publishedAt: { $notNull: true } },
+                select: ['publishedAt'],
+            });
+            if (publishedVersion) {
+                (article as any).publishedAt = publishedVersion.publishedAt;
+            }
+        }
+
         return article;
     },
 
@@ -130,6 +151,27 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
             limit: pageSize,
             start: (page - 1) * pageSize,
         });
+
+        // Strapi 5 Document API (findMany sin status) devuelve los Drafts por defecto.
+        // Para que el frontend sepa que están publicados, buscamos si existe una versión publicada
+        // para estos documentIds y le inyectamos el publishedAt original.
+        if (results.length > 0) {
+            const documentIds = results.map((r: any) => r.documentId);
+            const publishedVersions = await strapi.db.query('api::article.article').findMany({
+                where: {
+                    documentId: { $in: documentIds },
+                    publishedAt: { $notNull: true },
+                },
+                select: ['documentId', 'publishedAt'],
+            });
+
+            for (const doc of results) {
+                const published = publishedVersions.find((p: any) => p.documentId === doc.documentId);
+                if (published) {
+                    (doc as any).publishedAt = published.publishedAt;
+                }
+            }
+        }
 
         const total = await strapi.documents('api::article.article').count({
             filters,

@@ -1,34 +1,44 @@
 "use client";
 import * as React from "react";
 import { ArticleDetailHero } from "@/components/organisms/ArticleDetailHero";
+import { RelatedArticles } from "@/components/organisms/RelatedArticles";
+import GiscusComments from "@/components/organisms/GiscusComments";
 import Post from "@/components/molecules/Post";
-import { articleService } from "@/actions/article";
+import * as articleService from "@/actions/article";
 import { Article } from "@/model/article.schema";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 
 interface ArticleDetailPageProps {
-    documentId: string;
+    documentId?: string;
+    initialArticle?: Article;
     /** When true, hides edit actions and adjusts navigation */
     readOnly?: boolean;
     /** Where to redirect on error or back navigation */
     backHref?: string;
 }
 
-export default function ArticleDetailPage({ documentId, readOnly = false, backHref }: ArticleDetailPageProps) {
-    const [article, setArticle] = React.useState<Article | null>(null);
-    const [isLoading, setIsLoading] = React.useState(true);
+export default function ArticleDetailPage({ documentId, initialArticle, readOnly = false, backHref }: ArticleDetailPageProps) {
+    const [article, setArticle] = React.useState<Article | null>(initialArticle || null);
+    const [isLoading, setIsLoading] = React.useState(!initialArticle);
     const { toast } = useToast();
     const router = useRouter();
 
     const fallbackRedirect = backHref || (readOnly ? "/articles" : "/dashboard/articles");
 
     React.useEffect(() => {
+        if (initialArticle) {
+            setArticle(initialArticle);
+            setIsLoading(false);
+            return;
+        }
+        
+        if (!documentId) return;
+
         const fetchArticle = async () => {
             try {
                 const response = await articleService.getArticleById(documentId);
-
                 setArticle(response.data);
             } catch (error) {
                 toast({
@@ -42,7 +52,7 @@ export default function ArticleDetailPage({ documentId, readOnly = false, backHr
             }
         };
         fetchArticle();
-    }, [documentId]);
+    }, [documentId, initialArticle, router, fallbackRedirect, toast]);
 
     if (isLoading) {
         return (
@@ -56,11 +66,20 @@ export default function ArticleDetailPage({ documentId, readOnly = false, backHr
     if (!article) return null;
 
     return (
-        <div className="flex-1 w-full p-4 md:p-8 pt-6 mt-20">
+        <div className="flex-1 w-full p-4 md:p-8 pt-6">
             <ArticleDetailHero article={article} readOnly={readOnly} backHref={backHref} />
 
             <div className="w-full mx-auto mt-12 bg-[#060609] rounded-2xl p-6 md:p-10 border border-white/5 shadow-xl">
                 <Post content={article.content || ""} />
+                
+                {article.categories && article.categories.length > 0 && (
+                    <RelatedArticles 
+                        categorySlug={article.categories[0].slug} 
+                        currentDocumentId={article.documentId!} 
+                    />
+                )}
+                
+                <GiscusComments />
             </div>
         </div>
     );

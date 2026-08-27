@@ -12,7 +12,11 @@ export default factories.createCoreController('api::article.article', ({ strapi 
      * GET /api/articles — Public: returns all published articles.
      */
     async find(ctx) {
-        const { page, pageSize, sort, search, category } = ctx.query;
+        const { page, pageSize, sort, search, category, filters } = ctx.query;
+
+        // Extraer el slug de los filtros estándar de Strapi si viene (ej: filters[slug][$eq]=...)
+        const slug = (filters as any)?.slug?.$eq || (filters as any)?.slug;
+        const excludeId = (filters as any)?.documentId?.$ne || (filters as any)?.documentId?.$not;
 
         const result = await strapi
             .service('api::article.article-service')
@@ -22,6 +26,8 @@ export default factories.createCoreController('api::article.article', ({ strapi 
                 sort: sort as string || 'createdAt:desc',
                 search: search as string,
                 category: category as string,
+                slug: slug as string,
+                excludeId: excludeId as string,
             });
 
         ctx.body = result;

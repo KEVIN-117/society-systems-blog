@@ -25,7 +25,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { articleService } from "@/actions/article";
+import * as articleService from "@/actions/article";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 
@@ -33,15 +33,10 @@ interface ArticleListProps {
     initialArticles: Article[];
     initialTotalPages: number;
     currentPage: number;
-    /** When true, hides delete and edit actions */
     readOnly?: boolean;
-    /** Base path for pagination and card links */
     basePath?: string;
-    /** Label for the empty state */
     emptyTitle?: string;
-    /** Description for the empty state */
     emptyDescription?: string;
-    /** Whether to show the "Create Article" button in the empty state */
     showCreateButton?: boolean;
 }
 
@@ -60,6 +55,10 @@ export function ArticleList({
     const [isDeleting, setIsDeleting] = React.useState(false);
     const { toast } = useToast();
     const router = useRouter();
+
+    React.useEffect(() => {
+        setArticles(initialArticles);
+    }, [initialArticles]);
 
     const handleDelete = async () => {
         if (!articleToDelete) return;

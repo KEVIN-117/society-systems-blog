@@ -1,15 +1,10 @@
-import { apiClient } from '@/datasource/remote/axios';
+import axiosClient from "@/datasource/local/axios";
 import type { LoginInput, RegisterInput, AuthResponse } from '@/model/auth.schema';
-import Cookies from 'js-cookie';
 
 export const authService = {
   login: async (data: LoginInput): Promise<AuthResponse> => {
     try {
-      const response = await apiClient.post<AuthResponse>('/auth/login', data);
-      if (response.data.jwt) {
-        // Guardamos el token en cookies usando js-cookie para el cliente
-        Cookies.set('auth_token', response.data.jwt, { path: '/' });
-      }
+      const response = await axiosClient.post<AuthResponse>('/auth/login', data);
       return response.data;
     } catch (error) {
       throw error;
@@ -18,10 +13,7 @@ export const authService = {
 
   register: async (data: RegisterInput): Promise<AuthResponse> => {
     try {
-      const response = await apiClient.post<AuthResponse>('/auth/register', data);
-      if (response.data.jwt) {
-        Cookies.set('auth_token', response.data.jwt, { path: '/' });
-      }
+      const response = await axiosClient.post<AuthResponse>('/auth/register', data);
       return response.data;
     } catch (error) {
       throw error;
@@ -30,12 +22,11 @@ export const authService = {
 
   logout: async () => {
     try {
-      const response = await apiClient.post('/auth/logout');
-      return response.data
+      const response = await axiosClient.post('/auth/logout');
+      return response.data;
     } catch (error) {
-      throw error
+      throw error;
     } finally {
-      Cookies.remove('auth_token');
       window.location.href = '/';
     }
   }

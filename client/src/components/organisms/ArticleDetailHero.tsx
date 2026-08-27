@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Edit3, Clock, ArrowLeft, Calendar, User as UserIcon } from "lucide-react";
 import { Article } from "@/model/article.schema";
 import { Badge } from "@/components/ui/badge";
+import { getReadingTime } from "@/lib/utils";
 
 interface ArticleDetailHeroProps {
     article: Article;
@@ -20,9 +21,7 @@ export function ArticleDetailHero({ article, readOnly = false, backHref }: Artic
         ? (article.author.avatar.url.startsWith('http') ? article.author.avatar.url : `${process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337'}${article.author.avatar.url}`)
         : null;
 
-    // Estimate reading time
-    const wordCount = article.content?.split(/\s+/).length || 0;
-    const readingTime = Math.max(1, Math.ceil(wordCount / 200));
+    const readingTimeStr = getReadingTime(article.content || '');
     const isDraft = !article.publishedAt;
 
     const resolvedBackHref = backHref || (readOnly ? "/articles" : "/dashboard/articles");
@@ -119,7 +118,7 @@ export function ArticleDetailHero({ article, readOnly = false, backHref }: Artic
                     {/* Reading Time */}
                     <div className="flex items-center gap-2">
                         <Clock className="w-4 h-4 text-[#00b4db]" />
-                        <span>{readingTime} min de lectura</span>
+                        <span>{readingTimeStr}</span>
                     </div>
                 </div>
 

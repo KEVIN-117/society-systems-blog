@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     // Configurar la cookie con el token en el servidor BFF
     const res = NextResponse.json(data, { status: 200 });
     res.cookies.set('auth_token', data.jwt, {
-      httpOnly: false, // Permitir acceso al cliente
+      httpOnly: true, // Protege el token contra accesos desde JavaScript en el cliente
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',

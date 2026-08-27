@@ -4,7 +4,6 @@ import Link from "next/link";
 import { GlassButton } from "@/components/atoms/GlassButton";
 import { Cpu, Mail, Lock } from "lucide-react";
 import { useForm } from "@tanstack/react-form-nextjs";
-import type { AnyFieldApi } from '@tanstack/react-form-nextjs';
 import { loginSchema } from "@/model/auth.schema";
 import { authService } from "@/actions/auth";
 import { Input } from "@/components/ui/input";

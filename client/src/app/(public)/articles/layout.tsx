@@ -9,7 +9,7 @@ export default function ArticlesLayout({
     return (
         <>
             <Navbar />
-            <main className="flex-grow min-h-screen bg-[#060609]">
+            <main className="flex-grow min-h-screen bg-[#060609] pt-20">
                 {children}
             </main>
             <Footer />

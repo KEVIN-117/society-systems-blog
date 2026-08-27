@@ -7,9 +7,7 @@ import { Badge } from "@/components/ui/badge";
 interface ArticleCardProps {
     article: Article;
     onDelete?: (id: string) => void;
-    /** When true, hides Edit and Delete buttons */
     readOnly?: boolean;
-    /** Base path for links (default: "/dashboard/articles") */
     basePath?: string;
 }
 
@@ -18,7 +16,6 @@ export function ArticleCard({ article, onDelete, readOnly = false, basePath = "/
         ? (article.cover.url.startsWith('http') ? article.cover.url : `${process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337'}${article.cover.url}`)
         : null;
 
-    // Estimate reading time (rough estimation: 200 words per minute)
     const wordCount = article.content?.split(/\s+/).length || 0;
     const readingTime = Math.max(1, Math.ceil(wordCount / 200));
 
@@ -26,7 +23,6 @@ export function ArticleCard({ article, onDelete, readOnly = false, basePath = "/
 
     return (
         <div className="group relative flex flex-col overflow-hidden rounded-2xl bg-[#060609] border border-white/5 hover:border-[#72004c]/40 transition-all duration-500 h-[420px] shadow-lg hover:shadow-2xl hover:shadow-[#72004c]/10">
-            {/* Image Container with Hover Overlay */}
             <div className="relative h-48 w-full overflow-hidden bg-[#0a0a0f] flex-shrink-0">
                 {coverUrl ? (
                     <img
@@ -40,7 +36,6 @@ export function ArticleCard({ article, onDelete, readOnly = false, basePath = "/
                     </div>
                 )}
 
-                {/* Status Badge */}
                 <div className="absolute top-3 right-3 z-10 flex gap-2">
                     {isDraft && (
                         <Badge variant="outline" className="bg-black/60 backdrop-blur-md border-amber-500/50 text-amber-500">
@@ -49,7 +44,6 @@ export function ArticleCard({ article, onDelete, readOnly = false, basePath = "/
                     )}
                 </div>
 
-                {/* Categories */}
                 <div className="absolute bottom-3 left-3 z-10 flex flex-wrap gap-1.5">
                     {article.categories?.slice(0, 3).map(cat => (
                         <Badge key={cat.id} variant="secondary" className="bg-black/60 backdrop-blur-md border-[#00b4db]/30 text-xs text-gray-200">
@@ -63,9 +57,8 @@ export function ArticleCard({ article, onDelete, readOnly = false, basePath = "/
                     )}
                 </div>
 
-                {/* Hover Action Overlay */}
                 <div className="absolute inset-0 bg-black/60 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-3 z-20">
-                    <Link href={`${basePath}/${article.documentId}`} className="p-3 rounded-full bg-white/10 hover:bg-[#00b4db] text-white transition-all transform hover:scale-110" title="Ver Artículo" aria-label="Ver Artículo">
+                    <Link href={`${basePath}/${(readOnly || basePath !== '/dashboard/articles') ? (article.slug || article.documentId) : article.documentId}`} className="p-3 rounded-full bg-white/10 hover:bg-[#00b4db] text-white transition-all transform hover:scale-110" title="Ver Artículo" aria-label="Ver Artículo">
                         <Eye className="w-5 h-5" />
                     </Link>
                     {!readOnly && (
@@ -85,7 +78,6 @@ export function ArticleCard({ article, onDelete, readOnly = false, basePath = "/
                 </div>
             </div>
 
-            {/* Content Container */}
             <div className="flex flex-col flex-1 p-5">
                 <h3 className="font-heading text-lg font-bold text-white mb-2 line-clamp-2 group-hover:text-[#00b4db] transition-colors leading-tight">
                     {article.title}
