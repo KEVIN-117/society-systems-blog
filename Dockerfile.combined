@@ -39,6 +39,7 @@ RUN apk add --no-cache nginx supervisor vips-dev bash su-exec && mkdir -p /run/n
 WORKDIR /app
 COPY --from=api-builder /app/api/node_modules ./api/node_modules
 COPY --from=api-builder /app/api/package.json ./api/package.json
+COPY --from=api-builder /app/api/tsconfig.json ./api/tsconfig.json
 COPY --from=api-builder /app/api/dist ./api/dist
 COPY --from=api-builder /app/api/public ./api/public
 COPY --from=api-builder /app/api/database ./api/database
