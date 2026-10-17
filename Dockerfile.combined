@@ -1,0 +1,54 @@
+FROM node:22-alpine AS api-deps
+RUN apk add --no-cache build-base gcc autoconf automake zlib-dev libpng-dev nasm bash vips-dev git
+WORKDIR /app/api
+RUN npm install -g pnpm@11.15.1 && pnpm config set strict-dep-builds false
+COPY api/package.json ./
+RUN pnpm install
+
+FROM node:22-alpine AS api-builder
+RUN apk add --no-cache build-base gcc autoconf automake zlib-dev libpng-dev nasm bash vips-dev git
+WORKDIR /app/api
+RUN npm install -g pnpm@11.15.1
+COPY --from=api-deps /app/api/node_modules ./node_modules
+COPY api/ ./
+ENV NODE_ENV=production
+RUN npm run build
+
+FROM node:22-alpine AS client-deps
+RUN apk add --no-cache libc6-compat
+WORKDIR /app/client
+RUN npm install -g pnpm@11.15.1 && pnpm config set strict-dep-builds false
+COPY client/package.json client/pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
+
+FROM node:22-alpine AS client-builder
+WORKDIR /app/client
+RUN npm install -g pnpm@11.15.1
+COPY --from=client-deps /app/client/node_modules ./node_modules
+COPY client/ ./
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ARG NEXT_PUBLIC_STRAPI_API_URL=http://127.0.0.1:1337/api/
+ARG NEXT_PUBLIC_FRONTEND_URL=/api/
+ENV NEXT_PUBLIC_STRAPI_API_URL=${NEXT_PUBLIC_STRAPI_API_URL}
+ENV NEXT_PUBLIC_FRONTEND_URL=${NEXT_PUBLIC_FRONTEND_URL}
+RUN npm run build
+
+FROM node:22-alpine AS runtime
+RUN apk add --no-cache nginx supervisor vips-dev bash su-exec && mkdir -p /run/nginx /var/log/supervisor /app/api/public/uploads /app/api/.tmp /app/client
+WORKDIR /app
+COPY --from=api-builder /app/api/node_modules ./api/node_modules
+COPY --from=api-builder /app/api/package.json ./api/package.json
+COPY --from=api-builder /app/api/dist ./api/dist
+COPY --from=api-builder /app/api/public ./api/public
+COPY --from=api-builder /app/api/database ./api/database
+COPY --from=client-builder /app/client/.next/standalone ./client
+COPY --from=client-builder /app/client/.next/static ./client/.next/static
+COPY --from=client-builder /app/client/public ./client/public
+COPY docker/combined/nginx.conf /etc/nginx/http.d/default.conf
+COPY docker/combined/supervisord.conf /etc/supervisord.conf
+RUN chown -R node:node /app/api /app/client
+
+ENV NODE_ENV=production HOST=127.0.0.1 PORT=1337 NEXT_PUBLIC_STRAPI_URL=http://127.0.0.1:1337 NEXT_PUBLIC_STRAPI_API_URL=http://127.0.0.1:1337/api/ NEXT_PUBLIC_FRONTEND_URL=/api/ NEXT_TELEMETRY_DISABLED=1
+EXPOSE 80
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]

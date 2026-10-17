@@ -1,0 +1,9 @@
+.git
+.github
+.air
+**/node_modules
+**/.next
+**/.env
+**/.env.*
+**/.tmp
+**/public/uploads

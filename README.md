@@ -103,3 +103,49 @@ Toda la planificación reside directamente en el código bajo los siguientes arc
 2. Crear un branch semántico (ej: `feat/ID-FRONT-09-dashboard-crud` o `fix/ID-BACK-02-auth-hook`).
 3. Desarrollar la característica validando rigurosamente que se cumpla cada checklist de la **Definition of Done (DoD)** de la tarjeta Kanban.
 4. Enviar un Pull Request detallando los cambios. El PR será revisado en la columna **Review/Test** del tablero (WIP max: 2).
+
+## Publicación de imágenes Docker
+
+El workflow `.github/workflows/docker-publish.yml` construye y publica las imágenes de `api/` y `client/` en Docker Hub cuando hay cambios en `main` o se publica un tag de Git con formato `vMAJOR.MINOR.PATCH` (por ejemplo, `v1.2.3`). También se puede ejecutar manualmente desde GitHub Actions.
+
+En **Settings → Secrets and variables → Actions**, configura estos secrets:
+
+- `DOCKERHUB_USERNAME`: usuario de Docker Hub.
+- `DOCKERHUB_TOKEN`: access token de Docker Hub con permiso de escritura.
+
+Los repositorios de destino son `USUARIO/society-systems-api`, `USUARIO/society-systems-client` y `USUARIO/society-systems-combined`. En `main` se publican `latest` y un tag corto con el SHA del commit. Al publicar `v1.2.3`, se publican `1.2.3`, `1.2`, `1` y el SHA del commit.
+
+Para crear una versión y disparar la publicación:
+
+```bash
+git tag v1.2.3
+git push origin v1.2.3
+```
+
+Los tags de versión deben seguir SemVer y comenzar con `v`. Cada versión construye las imágenes separadas de API y cliente, además de la imagen combinada.
+
+### Imagen combinada con reverse proxy
+
+Además de las imágenes separadas, el workflow publica `USUARIO/society-systems-combined`. Esta imagen contiene Nginx, Next.js y Strapi en un solo contenedor; Nginx recibe el tráfico en el puerto `80`, dirige `/` al cliente, `/api/` al BFF de Next.js y `/admin/` y `/uploads/` a Strapi. Se crea con `Dockerfile.combined` y no reemplaza las imágenes existentes.
+
+Para ejecutarla, proporciona al menos las variables de entorno requeridas por Strapi (claves `APP_KEYS`, `API_TOKEN_SALT`, `ADMIN_JWT_SECRET`, `TRANSFER_TOKEN_SALT`, `JWT_SECRET` y `ENCRYPTION_KEY`, además de la configuración de base de datos). No incluyas esas claves en la imagen. Ejemplo:
+
+```bash
+docker run --name society-systems -p 80:80 \
+  -e APP_KEYS="clave1,clave2,clave3,clave4" \
+  -e API_TOKEN_SALT="..." \
+  -e ADMIN_JWT_SECRET="..." \
+  -e TRANSFER_TOKEN_SALT="..." \
+  -e JWT_SECRET="..." \
+  -e ENCRYPTION_KEY="..." \
+  -e DATABASE_CLIENT=postgres \
+  -e DATABASE_HOST="..." \
+  -e DATABASE_PORT=5432 \
+  -e DATABASE_NAME="..." \
+  -e DATABASE_USERNAME="..." \
+  -e DATABASE_PASSWORD="..." \
+  -e DATABASE_SSL=true \
+  USUARIO/society-systems-combined:latest
+```
+
+También puedes montarla desde Docker Compose; publica únicamente el puerto `80` y gestiona las claves con el gestor de secretos de tu entorno. Si Strapi usa SQLite, monta un volumen persistente para `/app/api/.tmp`; con PostgreSQL, usa una base de datos externa persistente.
